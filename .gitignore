@@ -1,0 +1,5 @@
+node_modules/
+venv/
+solver/
+output.js
+*.partial.js
