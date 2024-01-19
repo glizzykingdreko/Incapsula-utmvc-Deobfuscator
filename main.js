@@ -9,17 +9,18 @@ const reorderSwitchCases = require("./transformers/reorderSwitchCases.js");
 const replaceInliningFunctions = require("./transformers/replaceInlineFunctions.js")
 const simplifyBinaryExpressions = require("./transformers/simplifyBinaryExpressions.js")
 const debfuscateRC4Encryption = require("./transformers/deobfuscateRC4.js")
-
+const virtualizeEncryption = require("./transformers/virtualizeEncryption.js")
 
 /**
  * Deobfuscate the code from the input file and save it to the output file
  * @param {string} inputfile - The input file
  * @param {string} outputFile - The output file
  * @param {boolean} savePartial - If true, save the partial deobfuscated code to <outputFile>.partial.js
- * @returns {void}
+ * @param {boolean} virtualize - If true, virtualize the encryption function
+ * @returns {Object} The sandbox object of the AST
  * @throws {Error} If the input file does not exist
 */
-function deobfuscateCode(inputfile, outputFile, savePartial=false) {
+function deobfuscateCode(inputfile, outputFile, savePartial=false, virtualize=false) {
     console.log("------------------------- Incapsula UTMVC Deobfuscator -------------------------")
 
     inputfile = inputfile.replace(/\.js$/, '');
@@ -62,11 +63,19 @@ function deobfuscateCode(inputfile, outputFile, savePartial=false) {
     outputFile = `${outputFile}.js`;
     fs.writeFileSync(outputFile, code);
     console.log(`----| Saved deobfuscated code to ${outputFile}`);
-    console.log("---------------------------------------------------------------------------------")
+    let context = virtualizeEncryption(ast);
+    if (context) {
+        console.log(`----| Virtualized encryption function`);
+    } else {
+        console.log(`----| Failed to virtualize encryption function`);
+    }
+    console.log("---------------------------------------------------------------------------------");
+    return context;
 }
 
 let inputfile = process.argv[2] || "./script";
 let outputFile = process.argv[3] || "./output";
 let savePartial = process.argv[4] === "true";
+let virtualize = process.argv[5] === "true";
 
-deobfuscateCode(inputfile, outputFile, savePartial);
+deobfuscateCode(inputfile, outputFile, savePartial, virtualize);

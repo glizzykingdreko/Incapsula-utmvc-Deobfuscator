@@ -15,6 +15,7 @@ const { atob, rc4DecryptFromArray, shuffleArray } = require('./deobfuscateHelper
  */
 function findDecryptionArrays(ast) {
     const stringArrays = [];
+    const caseCtx = { ...ast.sandbox };
 
     traverse(ast, {
         Program(path) {
@@ -30,6 +31,7 @@ function findDecryptionArrays(ast) {
                 const arrayName = path.get(`declarations.0.id.name`).node;
                 const stringArray = path.get(`declarations.0.init.elements`).map((p) => p.node.value);
                 stringArrays.push({ arrayName, stringArray });
+                vm.runInNewContext(generate(path.node).code, caseCtx);
                 path.remove();
 
             });
@@ -108,7 +110,7 @@ function findEncoders(ast) {
  * @returns {Object} The sandbox context.
  */
 function createSandbox({ stringArrays, shuffleBys, encoders }) {
-    const context = { atob, rc4DecryptFromArray, shuffleArray };
+    const context = { atob, rc4DecryptFromArray, shuffleArray, btoa };
     encoders.forEach((encoder, index) => {
         const { stringArray, arrayName } = stringArrays[index];
         const shuffleBy = shuffleBys[index];
@@ -133,8 +135,20 @@ function debfuscateRC4Encryption(ast) {
     const encoders = findEncoders(ast);
     const sandbox = createSandbox({ stringArrays, shuffleBys, encoders });
     ast.sandbox = sandbox;
+    ast.stringArrays = stringArrays;
+    ast.shuffleBys = shuffleBys;
+    ast.encoders = encoders;
 
     traverse(ast, {
+        VariableDeclarator: {
+            exit(path) {
+                try {
+                    vm.runInNewContext(
+                        generate(path.node).code, ast.sandbox
+                    )
+                } catch (e) {}
+            }
+        },
         CallExpression: {
             exit(path) {
                 const callee = path.get(`callee`);
@@ -143,7 +157,11 @@ function debfuscateRC4Encryption(ast) {
                     return;
                 }
                 try {
-                    const evaluatedNode = t.stringLiteral(vm.runInNewContext(generate(path.node).code, ast.sandbox));
+                    const evaluatedNode = t.stringLiteral(
+                        vm.runInNewContext(
+                            generate(path.node).code, ast.sandbox
+                        )
+                    );
                     path.replaceWith(evaluatedNode);
                     matches++;
                 } catch (e) {
@@ -158,7 +176,10 @@ function debfuscateRC4Encryption(ast) {
                             path.replaceWith(evaluatedNode);
                             matches++;
                         } catch (e) {
+                            console.log(e);
                         }
+                    } else {
+                        console.log(e)
                     }
                 }
             }

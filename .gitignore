@@ -3,3 +3,5 @@ venv/
 solver/
 output.js
 *.partial.js
+outputz.js
+*.html

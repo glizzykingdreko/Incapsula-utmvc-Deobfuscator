@@ -30,11 +30,12 @@ A tool designed to decode, deobfuscate, and simplify JavaScript files obfuscated
 ## Usage
 To run the deobfuscator:
 ```bash
-node deobfuscate.js [inputFilePath] [outputFilePath] [savePartial]
+node deobfuscate.js [inputFilePath] [outputFilePath] [savePartial] [virtualizeEncryption]
 ```
 - `inputFilePath`: (Optional) Path to the input JavaScript file. Default is ./script.js.
 - `outputFilePath`: (Optional) Path where the deobfuscated code will be saved. Default is ./output.js.
 - `savePartial`: (Optional) Boolean flag to save partially deobfuscated code. (just decoded from hexadecimal) Default is false.
+- `virtualizeEncryption`: (Optional) Boolean flag to virtualize the utmvc encryption function as **utmvcEncryption** and return the context. Default is false.
 
 *Note* You can give as input file the original script that needs to be decoded from hex or the already decoded one.
 
@@ -66,6 +67,17 @@ var _0xd370 = [...];
     // ...
 ```
 
+### Virtualize encryption
+```js
+let context = deobfuscateCode("script", "output", false, true);
+console.log(
+  vm.runInNewContext(
+    "utmvcEncryption('myBeautifulString', ['myBeautifulCookie'])",
+    context
+  )
+);
+```
+
 ## Structure
 - `deobfuscate.js`: Main driver script coordinating the deobfuscation process.
 - `transformers/`: Directory containing various transformation scripts.
@@ -75,6 +87,7 @@ var _0xd370 = [...];
     - `replaceInlineFunctions.js`: Substitutes inline functions with their actual content.
     - `simplifyBinaryExpressions.js`: Reduces complexity of binary expressions.
     - `deobfuscateRC4.js`: Decrypts content encrypted using RC4.
+    - `virtualizeEncryption.js`: Virtualize the utmvc encryption function as **utmvcEncryption**.
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
